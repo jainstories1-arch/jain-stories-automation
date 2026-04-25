@@ -53,16 +53,14 @@ class JainStoriesAutomation:
         else:
             raise ValueError("GOOGLE_CREDENTIALS not found in environment")
         
-        token_raw = os.environ.get('YOUTUBE_TOKEN')
+        token_raw = os.environ.get('TOKEN_PICKLE') # Use TOKEN_PICKLE here
         if token_raw:
             try:
-                # This line is indented once more than 'try'
+                # This .strip() is the "magic" that fixes the \x0a error
                 token_bytes = token_raw.strip().encode('latin-1')
-                # This line is aligned exactly with the one above
                 self.youtube_creds = pickle.loads(token_bytes)
                 print("[✓] YouTube credentials loaded")
             except Exception as e:
-                # This 'except' must be aligned perfectly with 'try'
                 print(f"[!] YouTube token error: {e}")
                 self.youtube_creds = None
 
