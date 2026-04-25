@@ -34,7 +34,7 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-        YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+        YOUTUBE_TOKEN: ${{ secrets.TOKEN_PICKLE }}
       run: |
         echo "$GOOGLE_CREDENTIALS" > google-credentials.json
         echo "$CLIENT_SECRET" > client_secret.json
@@ -44,7 +44,7 @@ jobs:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         SHEET_ID: ${{ secrets.SHEET_ID }}
-        YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }} # <--- Add this line
+        YOUTUBE_TOKEN: ${{ secrets.TOKEN_PICKLE }} # <--- Add this line
       run: |
         python main.py --generate-script
     
@@ -60,7 +60,7 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-        YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+        YOUTUBE_TOKEN: ${{ secrets.TOKEN_PICKLE }}
         SHEET_ID: ${{ secrets.SHEET_ID }}
         APPROVED_FOLDER_ID: ${{ secrets.APPROVED_FOLDER_ID }}
         PUBLISHED_FOLDER_ID: ${{ secrets.PUBLISHED_FOLDER_ID }}
