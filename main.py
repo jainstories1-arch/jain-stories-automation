@@ -53,9 +53,12 @@ class JainStoriesAutomation:
         
         # YouTube OAuth
         self.youtube_creds = None
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                self.youtube_creds = pickle.load(token)
+       token_b64 = os.environ.get('TOKEN_PICKLE')
+if token_b64:
+    import base64
+    import io
+    token_bytes = base64.b64decode(token_b64)
+    self.youtube_creds = pickle.loads(token_bytes)
         
         # Gemini API
         gemini_key = os.environ.get('GEMINI_API_KEY')
