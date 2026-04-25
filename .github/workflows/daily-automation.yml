@@ -1,0 +1,75 @@
+name: Daily Jain Story Automation
+
+on:
+  schedule:
+    # Runs at 3:30 AM UTC = 9:00 AM IST
+    - cron: '30 3 * * *'
+  
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg fonts-dejavu-core
+    
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Set up credentials
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+      run: |
+        echo "$GOOGLE_CREDENTIALS" > google-credentials.json
+        echo "$CLIENT_SECRET" > client_secret.json
+        echo "$YOUTUBE_TOKEN" > token.pickle
+    
+    - name: Generate daily script
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
+      run: |
+        python main.py --generate-script
+    
+    - name: Create videos from approved scripts
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
+        PENDING_FOLDER_ID: ${{ secrets.PENDING_FOLDER_ID }}
+      run: |
+        python main.py --create-videos
+    
+    - name: Upload approved videos to YouTube
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
+        APPROVED_FOLDER_ID: ${{ secrets.APPROVED_FOLDER_ID }}
+        PUBLISHED_FOLDER_ID: ${{ secrets.PUBLISHED_FOLDER_ID }}
+      run: |
+        python main.py --upload-youtube
+    
+    - name: Cleanup credentials
+      if: always()
+      run: |
+        rm -f google-credentials.json
+        rm -f client_secret.json
+        rm -f token.pickle
