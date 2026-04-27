@@ -117,7 +117,7 @@ def update_script_status(row_number, status, video_url='', notes=''):
 def generate_jain_story_script():
     """Generate a Jain story script using Gemini AI"""
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = """
     Generate a short Jain story suitable for children aged 5-16 years.
