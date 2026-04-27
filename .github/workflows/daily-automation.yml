@@ -1,0 +1,43 @@
+name: Daily Jain Story Automation
+
+on:
+  schedule:
+    # Runs at 3:30 AM UTC = 9:00 AM IST
+    - cron: '30 3 * * *'
+  
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  generate-and-create:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg fonts-dejavu-core
+    
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run daily automation
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
+        PENDING_FOLDER_ID: ${{ secrets.PENDING_FOLDER_ID }}
+        APPROVED_FOLDER_ID: ${{ secrets.APPROVED_FOLDER_ID }}
+        PUBLISHED_FOLDER_ID: ${{ secrets.PUBLISHED_FOLDER_ID }}
+        REJECTED_FOLDER_ID: ${{ secrets.REJECTED_FOLDER_ID }}
+      run: |
+        python main.py
