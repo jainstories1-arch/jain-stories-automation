@@ -39,5 +39,6 @@ jobs:
         APPROVED_FOLDER_ID: ${{ secrets.APPROVED_FOLDER_ID }}
         PUBLISHED_FOLDER_ID: ${{ secrets.PUBLISHED_FOLDER_ID }}
         REJECTED_FOLDER_ID: ${{ secrets.REJECTED_FOLDER_ID }}
+        DRIVE_TOKEN: ${{ secrets.DRIVE_TOKEN }}
       run: |
         python main.py
