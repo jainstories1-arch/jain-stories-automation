@@ -36,6 +36,7 @@ CLIENT_SECRET_JSON = os.environ.get('CLIENT_SECRET')
 
 # YouTube token (base64 encoded pickle) - Only needed for YouTube upload
 TOKEN_PICKLE_B64 = os.environ.get('TOKEN_PICKLE')
+DRIVE_TOKEN_B64 = os.environ.get('DRIVE_TOKEN')
 
 # =============================================================================
 # LOAD CREDENTIALS
@@ -270,8 +271,9 @@ def create_video(title, audio_path, output_path='video.mp4'):
 
 def upload_to_drive(file_path, folder_id, filename):
     """Upload file to Google Drive"""
-    creds = load_service_account_creds()
-    service = build('drive', 'v3', credentials=creds)
+    token_bytes = base64.b64decode(DRIVE_TOKEN_B64)
+creds = pickle.loads(token_bytes)
+service = build('drive', 'v3', credentials=creds)
     
     file_metadata = {
         'name': filename,
