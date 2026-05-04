@@ -272,8 +272,8 @@ def create_video(title, audio_path, output_path='video.mp4'):
 def upload_to_drive(file_path, folder_id, filename):
     """Upload file to Google Drive"""
     token_bytes = base64.b64decode(DRIVE_TOKEN_B64)
-creds = pickle.loads(token_bytes)
-service = build('drive', 'v3', credentials=creds)
+    creds = pickle.loads(token_bytes)
+    service = build('drive', 'v3', credentials=creds)
     
     file_metadata = {
         'name': filename,
