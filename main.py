@@ -96,7 +96,7 @@ def get_approved_scripts():
     # Filter for APPROVED scripts without video URLs (not yet processed)
     approved = []
     for idx, record in enumerate(all_records, start=2):  # start=2 because row 1 is header
-        if record.get('Status') == 'APPROVED' and not record.get('Video URL'):
+        if record.get('Status') == 'APPROVED': 
             record['_row_number'] = idx
             approved.append(record)
     
