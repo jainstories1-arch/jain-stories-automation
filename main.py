@@ -20,12 +20,8 @@ from moviepy.editor import ImageClip, AudioFileClip
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 SHEET_ID = os.environ.get('SHEET_ID')
 PENDING_FOLDER_ID = os.environ.get('PENDING_FOLDER_ID')
-APPROVED_FOLDER_ID = os.environ.get('APPROVED_FOLDER_ID')
 PUBLISHED_FOLDER_ID = os.environ.get('PUBLISHED_FOLDER_ID')
-REJECTED_FOLDER_ID = os.environ.get('REJECTED_FOLDER_ID')
 GOOGLE_CREDENTIALS_JSON = os.environ.get('GOOGLE_CREDENTIALS')
-CLIENT_SECRET_JSON = os.environ.get('CLIENT_SECRET')
-TOKEN_PICKLE_B64 = os.environ.get('TOKEN_PICKLE')
 DRIVE_TOKEN_B64 = os.environ.get('DRIVE_TOKEN')
 
 def load_service_account_creds():
@@ -36,51 +32,24 @@ def load_service_account_creds():
     ]
     return ServiceAccountCredentials.from_service_account_info(creds_dict, scopes=scopes)
 
-def load_youtube_creds():
-    try:
-        token_bytes = base64.b64decode(TOKEN_PICKLE_B64)
-        creds = pickle.loads(token_bytes)
-        return creds
-    except Exception as e:
-        print(f"Error loading YouTube credentials: {e}")
-        raise
-
 def get_sheet():
     creds = load_service_account_creds()
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SHEET_ID).sheet1
     return sheet
 
-def add_script_to_sheet(script_data):
+def add_to_sheet(script_data, video_url):
     sheet = get_sheet()
     row = [
         datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         script_data['title'],
         script_data['script'],
         'PENDING_APPROVAL',
-        '',
+        video_url,
         ''
     ]
     sheet.append_row(row)
-    print(f"✅ Script added to sheet: {script_data['title']}")
-
-def get_approved_scripts():
-    sheet = get_sheet()
-    all_records = sheet.get_all_records()
-    approved = []
-    for idx, record in enumerate(all_records, start=2):
-        if record.get('Status') == 'APPROVED':
-            record['_row_number'] = idx
-            approved.append(record)
-    return approved
-
-def update_script_status(row_number, status, video_url='', notes=''):
-    sheet = get_sheet()
-    sheet.update_cell(row_number, 4, status)
-    if video_url:
-        sheet.update_cell(row_number, 5, video_url)
-    if notes:
-        sheet.update_cell(row_number, 6, notes)
+    print(f"✅ Added to sheet: {script_data['title']}")
 
 def generate_jain_story_script():
     genai.configure(api_key=GEMINI_API_KEY)
@@ -108,7 +77,7 @@ def generate_jain_story_script():
             response_text = response_text[4:]
         response_text = response_text.strip()
     script_data = json.loads(response_text)
-    print(f"✅ Generated script: {script_data['title']}")
+    print(f"✅ Generated story: {script_data['title']}")
     return script_data
 
 def create_voiceover(text, output_path='voiceover.mp3'):
@@ -131,7 +100,7 @@ def create_voiceover(text, output_path='voiceover.mp3'):
     )
     with open(output_path, 'wb') as out:
         out.write(response.audio_content)
-    print(f"✅ Voiceover created: {output_path}")
+    print(f"✅ Voiceover created")
     return output_path
 
 def create_background_image(title, width=1080, height=1920):
@@ -163,7 +132,7 @@ def create_background_image(title, width=1080, height=1920):
         y_offset += 100
     img_path = 'background.png'
     img.save(img_path)
-    print(f"✅ Background image created: {img_path}")
+    print(f"✅ Background image created")
     return img_path
 
 def create_video(title, audio_path, output_path='video.mp4'):
@@ -180,7 +149,7 @@ def create_video(title, audio_path, output_path='video.mp4'):
         temp_audiofile='temp-audio.m4a',
         remove_temp=True
     )
-    print(f"✅ Video created: {output_path}")
+    print(f"✅ Video created")
     return output_path
 
 def upload_to_drive(file_path, folder_id, filename):
@@ -200,89 +169,37 @@ def upload_to_drive(file_path, folder_id, filename):
     print(f"✅ Uploaded to Drive: {file.get('webViewLink')}")
     return file.get('id'), file.get('webViewLink')
 
-def move_file_in_drive(file_url, from_folder_id, to_folder_id):
-    """Move a file from one Drive folder to another"""
-    try:
-        token_bytes = base64.b64decode(DRIVE_TOKEN_B64)
-        creds = pickle.loads(token_bytes)
-        service = build('drive', 'v3', credentials=creds)
-        if '/d/' in file_url:
-            file_id = file_url.split('/d/')[1].split('/')[0]
-        else:
-            file_id = file_url.split('id=')[1].split('&')[0]
-        service.files().update(
-            fileId=file_id,
-            addParents=to_folder_id,
-            removeParents=from_folder_id,
-            fields='id'
-        ).execute()
-        print(f"✅ File moved to Approved folder")
-    except Exception as e:
-        print(f"❌ Error moving file: {e}")
-
 def main():
     print("=" * 60)
     print("JAIN STORIES AUTOMATION - STARTING")
     print("=" * 60)
 
     try:
-        # STEP 1: Generate script
-        print("\n[STEP 1] Generating Jain story script...")
+        # STEP 1: Generate story
+        print("\n[STEP 1] Generating Jain story...")
         script_data = generate_jain_story_script()
 
-        # STEP 2: Save to Google Sheet
-        print("\n[STEP 2] Saving script to Google Sheet...")
-        add_script_to_sheet(script_data)
+        # STEP 2: Create voiceover
+        print("\n[STEP 2] Creating voiceover...")
+        audio_path = create_voiceover(script_data['script'])
 
-        print("\n✅ Script generation complete!")
-        print("👉 Please review the script in Google Sheet and mark it as APPROVED")
+        # STEP 3: Create video
+        print("\n[STEP 3] Creating video...")
+        video_filename = f"{script_data['title'].replace(' ', '_')}_{int(time.time())}.mp4"
+        video_path = create_video(script_data['title'], audio_path, video_filename)
 
-        # STEP 3: Check for approved scripts
-        print("\n[STEP 3] Checking for approved scripts...")
-        approved_scripts = get_approved_scripts()
+        # STEP 4: Upload to Drive (Pending Upload folder)
+        print("\n[STEP 4] Uploading to Google Drive...")
+        file_id, drive_url = upload_to_drive(video_path, PENDING_FOLDER_ID, video_filename)
 
-        if not approved_scripts:
-            print("No approved scripts found. Workflow complete.")
-            return
-
-        print(f"Found {len(approved_scripts)} approved script(s)...")
-
-        for script in approved_scripts:
-            print(f"\n📝 Processing: {script['Title']}")
-
-            # If video already exists, just move it to Approved folder
-            if script.get('Video URL'):
-                print("Video already created. Moving to Approved folder...")
-                move_file_in_drive(script['Video URL'], PENDING_FOLDER_ID, APPROVED_FOLDER_ID)
-                continue
-
-            # Otherwise create video
-            print("Creating voiceover...")
-            audio_path = create_voiceover(script['Script'])
-
-            print("Creating video...")
-            video_filename = f"{script['Title'].replace(' ', '_')}_{int(time.time())}.mp4"
-            video_path = create_video(script['Title'], audio_path, video_filename)
-
-            print("Uploading to Google Drive (Pending Upload folder)...")
-            file_id, drive_url = upload_to_drive(
-                video_path,
-                PENDING_FOLDER_ID,
-                video_filename
-            )
-
-            row_num = script['_row_number']
-            update_script_status(
-                row_num,
-                status='VIDEO_CREATED',
-                video_url=drive_url,
-                notes='Video in Pending Upload folder. Move to Approved to publish.'
-            )
-
-            print(f"\n✅ Video ready for review: {drive_url}")
+        # STEP 5: Log to Google Sheet with PENDING_APPROVAL
+        print("\n[STEP 5] Logging to Google Sheet...")
+        add_to_sheet(script_data, drive_url)
 
         print("\n" + "=" * 60)
-        print("AUTOMATION COMPLETE")
+        print("✅ DONE — Video is in Pending Upload folder")
+        print("👉 Watch the video, then change sheet status to APPROVED")
+        print("👉 Apps Script will upload to YouTube automatically")
         print("=" * 60)
 
     except Exception as e:
