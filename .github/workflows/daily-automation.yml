@@ -3,7 +3,7 @@ name: Daily Jain Story Automation
 on:
   schedule:
     # Runs at 3:30 AM UTC = 9:00 AM IST
-    - cron: '30 3 * * *'
+ #   - cron: '30 3 * * *'
   
   workflow_dispatch:  # Allows manual triggering
 
